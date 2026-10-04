@@ -8,7 +8,7 @@ import json
 import time
 from typing import AsyncIterator
 
-from fastapi import FastAPI, HTTPException, Depends, Security
+from fastapi import FastAPI, HTTPException, Depends, Security, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
@@ -33,6 +33,37 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def normalize_api_path(request: Request, call_next):
+    """
+    Toleriert alle gängigen OpenAI-Base-URL-Formate der Clients:
+
+      http://host:port         + Client hängt /v1/chat/completions an → OK
+      http://host:port/v1      + Client hängt /chat/completions an     → OK
+      http://host:port         + Client hängt /chat/completions an     → fix (fehlendes /v1)
+      http://host:port/v1      + Client hängt /v1/chat/completions an  → fix (doppeltes /v1)
+
+    So kann der User die Launcher-URL in jeden Client eintragen, egal ob
+    der Client den /v1-Präfix selbst dranhängt oder in der Base-URL erwartet.
+    """
+    path = request.url.path
+    original = path
+
+    # Doppeltes (oder mehrfaches) /v1-Präfix kollabieren
+    while path.startswith("/v1/v1/"):
+        path = path[3:]  # entfernt ein führendes /v1
+
+    # /v1-Präfix hinzufügen wenn Client den OpenAI-Pfad ohne Präfix sendet
+    if path == "/models" or path.startswith("/chat/completions"):
+        path = "/v1" + path
+
+    if path != original:
+        request.scope["path"] = path
+
+    return await call_next(request)
+
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 bearer_scheme  = HTTPBearer(auto_error=False)

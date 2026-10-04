@@ -15,7 +15,8 @@ Ideal um bestehende Clients (Open-WebUI, Librechat, Continue.dev, Ilija, eigene 
 - **Native Gemini-Content-Objekte**: Multi-Turn-Dialoge mit korrektem Role-Alternation, Tool-/Function-Role-Formatierung und Erstmessage-Enforcement
 - **Agent-History-Pruning**: in langen Agent-Loops werden mittlere Tool-Outputs komprimiert; Hauptziel + letzte N Turns bleiben voll erhalten → spart massiv Prompt-Tokens
 - **Token-Usage-Metriken**: `prompt_tokens`, `completion_tokens`, `total_tokens` werden aus Googles Metadaten weitergereicht
-- **Tkinter-Launcher**: Dark-Theme-GUI mit API-Key-Prüfung, Port-Einstellung, Start/Stop-Button und Endpunkt-URL zum Kopieren
+- **Tkinter-Launcher**: Dark-Theme-GUI mit API-Key-Prüfung, Port-Einstellung, Start/Stop-Button und **zwei Endpunkt-URLs** (Base + mit `/v1`-Suffix) zum Kopieren — je nachdem, welches Format dein Agent erwartet
+- **Flexible Base-URL**: Server toleriert `.../v1/chat/completions`, `/chat/completions` und sogar versehentliches `.../v1/v1/chat/completions` — dein Client kann in jedem Format konfiguriert sein
 
 ---
 
@@ -128,6 +129,17 @@ for chunk in resp:
 
 - `"auto"` — Router rotiert bei 429/503 automatisch
 - `"gemini-2.5-flash"`, `"gemini-pro-latest"`, … — explizites Modell; bei 429 weiter zum nächsten in der Rangliste
+
+### Base-URL-Formate
+
+Der Server akzeptiert beide gängigen OpenAI-Base-URL-Formate, damit du den Proxy in jeden Client eintragen kannst — egal ob er `/v1` selbst anhängt oder nicht:
+
+| Client erwartet | Base-URL eintragen |
+|---|---|
+| OpenAI-Standard (`/v1` im Pfad) | `http://host:8642/v1` |
+| Nur Hostname (Client hängt `/v1/...` selbst an) | `http://host:8642` |
+
+Die Launcher-UI zeigt beide Varianten mit eigenem Kopieren-Button an.
 
 ---
 

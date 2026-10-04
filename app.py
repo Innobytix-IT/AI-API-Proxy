@@ -134,15 +134,15 @@ class App(tk.Tk):
         self.lbl_status = tk.Label(row_st, text="Gestoppt", bg=BG, fg=TX3, font=("Segoe UI", 10))
         self.lbl_status.pack(side="left", padx=6)
 
-        # ── Endpunkt-URL ──
-        tk.Label(outer, text="Netzwerk-Endpunkt-URL (für alle Clients/Agenten)", bg=BG, fg=TX2, font=("Segoe UI", 9)).pack(anchor="w")
-        row_url = tk.Frame(outer, bg=BG)
-        row_url.pack(fill="x", pady=(2, 4))
-        self.var_url = tk.StringVar(value=f"http://{_local_ip()}:8642")
-        tk.Entry(row_url, textvariable=self.var_url, state="readonly",
-                 bg=BG2, fg=GREEN, readonlybackground=BG2,
-                 relief="flat", font=("Consolas", 10), bd=0).pack(side="left", fill="x", expand=True, ipady=6, padx=(0, 4))
-        self._btn(row_url, "Kopieren", self._copy_url).pack(side="left")
+        # ── Endpunkt-URLs ──
+        tk.Label(outer, text="Netzwerk-Endpunkt-URLs (beide Formate funktionieren)",
+                 bg=BG, fg=TX2, font=("Segoe UI", 9)).pack(anchor="w")
+
+        self.var_url_base = tk.StringVar(value=f"http://{_local_ip()}:8642")
+        self.var_url_v1   = tk.StringVar(value=f"http://{_local_ip()}:8642/v1")
+
+        self._url_row(outer, "Base",   self.var_url_base)
+        self._url_row(outer, "+ /v1",  self.var_url_v1)
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.minsize(470, 0)
@@ -165,18 +165,34 @@ class App(tk.Tk):
                          font=("Segoe UI", 9), padx=10, pady=4,
                          cursor="hand2", bd=0, activebackground=BG3, activeforeground=TX1)
 
+    def _url_row(self, parent, label: str, var: tk.StringVar):
+        row = tk.Frame(parent, bg=BG)
+        row.pack(fill="x", pady=(2, 2))
+        tk.Label(row, text=label, bg=BG, fg=TX3,
+                 font=("Segoe UI", 8), width=5, anchor="w").pack(side="left")
+        tk.Entry(row, textvariable=var, state="readonly",
+                 bg=BG2, fg=GREEN, readonlybackground=BG2,
+                 relief="flat", font=("Consolas", 10), bd=0
+                 ).pack(side="left", fill="x", expand=True, ipady=6, padx=(0, 4))
+        self._btn(row, "Kopieren", lambda v=var: self._copy_url(v)).pack(side="left")
+
     def _load_env(self):
         env = _read_env()
         self.var_api_key.set(env.get("GEMINI_API_KEY", ""))
         port = env.get("PORT", "8642")
         self.var_port.set(port)
-        self.var_url.set(f"http://{_local_ip()}:{port}")
-        
+        self._update_urls(port)
+
         secret = env.get("API_SECRET", "")
         if secret and secret not in ("change-me", "change-me-to-a-random-string"):
             self.var_secret.set(secret)
         else:
             self._gen_secret()
+
+    def _update_urls(self, port: str):
+        base = f"http://{_local_ip()}:{port}"
+        self.var_url_base.set(base)
+        self.var_url_v1.set(f"{base}/v1")
 
     def _gen_secret(self):
         self.var_secret.set(secrets.token_hex(16))
@@ -219,7 +235,7 @@ class App(tk.Tk):
             "ENABLE_AGENT_PRUNING": "true",
         })
 
-        self.var_url.set(f"http://{lan_ip}:{port}")
+        self._update_urls(port)
 
         try:
             self.server_proc = subprocess.Popen(
@@ -264,12 +280,12 @@ class App(tk.Tk):
             return
         self.after(2000, self._watch_server)
 
-    def _copy_url(self):
+    def _copy_url(self, var: tk.StringVar):
         self.clipboard_clear()
-        self.clipboard_append(self.var_url.get())
+        self.clipboard_append(var.get())
         prev = self.lbl_status.cget("text")
-        self.lbl_status.config(text="Netzwerk-URL kopiert ✓", fg=BLUE)
-        self.after(1800, lambda: self.lbl_status.config(text=prev))
+        self.lbl_status.config(text=f"URL kopiert ✓  →  {var.get()}", fg=BLUE)
+        self.after(2200, lambda: self.lbl_status.config(text=prev))
 
     def _on_close(self):
         self._stop_server()
