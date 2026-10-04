@@ -19,7 +19,27 @@ Ideal um bestehende Clients (Open-WebUI, Librechat, Continue.dev, Ilija, eigene 
 
 ---
 
-## Setup
+## Schnellstart (ein Befehl)
+
+Klont das Repo, installiert alle Dependencies und startet den Launcher.
+
+**Windows (PowerShell):**
+```powershell
+iwr -useb https://raw.githubusercontent.com/Innobytix-IT/AI-API-Proxy/main/install.ps1 | iex
+```
+
+**Linux / macOS:**
+```bash
+curl -sSL https://raw.githubusercontent.com/Innobytix-IT/AI-API-Proxy/main/install.sh | bash
+```
+
+Danach: API-Key eintragen (aus [aistudio.google.com/apikey](https://aistudio.google.com/apikey)) → **„▶ Server starten"** klicken.
+
+> **Hinweise:** Beide Skripte sind lesbar ([install.ps1](install.ps1), [install.sh](install.sh)) — Pipe-to-Shell nur ausführen wenn du den Inhalt vertraust. Linux-Nutzer brauchen evtl. `python3-tk` (`sudo apt install python3-tk`).
+
+---
+
+## Setup (manuell)
 
 ### Voraussetzungen
 
@@ -149,6 +169,8 @@ AI-API-Proxy/
 ├── providers/
 │   └── api.py          Gemini-SDK-Wrapper (async + streaming + usage)
 ├── test_routes.py      End-to-End-Test (Health, Standard, Streaming, Pruning)
+├── install.ps1         Windows-Quickstart (Clone + pip + Launcher)
+├── install.sh          Linux/macOS-Quickstart
 ├── requirements.txt
 ├── .env.example
 └── .gitignore
